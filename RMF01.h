@@ -1,7 +1,7 @@
 #ifndef RMF01_MODULE
 #define RMF01_MODULE
 
-#include <arduino.h>
+#include <avr/io.h>
 #include <stdint.h>
 #include <math.h>
 
@@ -10,21 +10,18 @@
 #define RMF01_SDO_DDR   DDRB
 #define RMF01_SEL_DDR   DDRB
 #define RMF01_INT_DDR   DDRB
-#define RMO01_LED_DDR   DDRB
 
 #define RMF01_SCK_PORT  PORTB
 #define RMF01_SDI_PORT  PORTB
 #define RMF01_SDO_PORT  PORTB
 #define RMF01_SEL_PORT  PORTB
 #define RMF01_INT_PORT  PORTB
-#define RMO01_LED_PORT  PORTB
 
 #define RMF01_SCK_PIN   0
 #define RMF01_SDI_PIN   0
 #define RMF01_SDO_PIN   0
 #define RMF01_SEL_PIN   0
 #define RMF01_INT_PIN   0
-#define RMF01_LED_PIN   0
 
 namespace RMF01 {
 
@@ -50,10 +47,10 @@ namespace RMF01 {
 
   enum LNA_GAIN {
 
-    LNA_GAIN_MINUS_20_DBM,  // Equal to 0.01 mW
-    LNA_GAIN_MINUS_14_DBM,  // Equal to 0.04 mW
-    LNA_GAIN_MINUS_6_DBM,   // Equal to 0.25 mW
-    LNA_GAIN_0_DBM          // Equal to 1.00 mW
+    LNA_GAIN_0_DBM,
+    LNA_GAIN_MINUS_6_DBM,
+    LNA_GAIN_MINUS_14_DBM,
+    LNA_GAIN_MINUS_20_DBM
 
     };
 
@@ -110,14 +107,13 @@ namespace RMF01 {
 
     INTERRUPT_NONE              = 0x00,
     INTERRUPT_WAKE_UP           = 0x01,
-    INTERRUPT_LOW_VOLTAGE       = 0x02,
-    INTERRUPT_BUFFER_OVERFLOW   = 0x04
+    INTERRUPT_LOW_VOLTAGE       = 0x02
 
     };
 
   enum PROFILE {
 
-    PROFILE_AVERANGE,               // Parameters are medium bandwidth, medium gain, medium signal threshold, high signal devation, frequency control on low signal, digital rssi and data quality detector as data indicators, low accuracy mode.
+    PROFILE_AVERANGE,               // Parameters are medium bandwidth, medium gain, medium signal threshold, high signal devation, frequency control on low signal, digital rssi and data quality detector as data indicators, high accuracy mode.
     PROFILE_LOW_POWER,              // Parameters are medium bandwidth, medium gain, medium signal threshold, high signal devation, steady frequency control, digital rssi as data indicator, low accuracy mode, low power mode.
     PROFILE_LOW_NOISE,              // Parameters are narrow bandwidth, low gain, high signal threshold, low signal devation, frequency control on power up, digital rssi and data quality detector as data indicators, and high accuracy mode.
     PROFILE_LONG_RANGE,             // Parameters are narrow bandwidth, high gain, low signal threshold, high signal devation, frequency control on low signal, digital rssi and data quality detector as data indicators, high accuracy mode. Baud (bitrate) value should be as low as possible.
@@ -125,7 +121,6 @@ namespace RMF01 {
 
     };
 
-  
   struct DataStruct {
 
     bool Valid;
@@ -141,52 +136,37 @@ namespace RMF01 {
     bool BufferOverflow;      // Buffer overflow interrupt occurred
     bool BufferEmpty;         // Data buffer is empty
 
-    bool RSSI;                // Digital RSSI detected a strong signal
-    bool DQD;                 // Data Quality Detector detected a good quality signal
-    bool AFCT;                // Frequency controller is in toggling cycle  
-    bool AFCS;                // Frequency is stable
+    bool StrongSignal;        // Digital RSSI detected a strong signal
+    bool GoodQualitySignal;   // Data Quality Detector detected a good quality signal
+    bool FrequencyToggling;   // Frequency controller is in toggling cycle  
+    bool FrequencyStable;     // Frequency is stable
     
     uint8_t SignalDevation;   // Signal frecuency devation in steps
 
     };
-
-  // dc：Disable signal output of CLK pin 
-  // data filter: Digital filter
-  // bit 7 al: Clock recovery (CR) auto lock control
-  // st: st goes hi will store offset into output register 
-  // oe: Enable AFC output register
-  // en: Enable AFC funcition 
-
-  /*
-
-  Bits eb and et control the operation of the low battery detector and
-  wake-up timer, respectively. They are enabled when the
-  corresponding bit is set.
-  If ex is set the crystal is active during sleep mode.
-  When dc bit is set it disables the clock output
-
-  */
-
-  void Init ( BAND Band, BANDWIDTH Bandwidth, uint16_t Frequency, uint16_t Baud, LNA_GAIN Gain, SIGNAL_THRESHOLD Threshold, SIGNAL_DEVATION Devation, AFC FrequencyControl, VDI DataIndicator, DQF DataQualityFactor, bool HighAccuracyMode, bool LowPowerMode, uint16_t WakeUpTime, uint8_t DutyCycle, uint8_t LowVoltage, uint8_t Interrupt, bool InitSPI );
-  void Init ( PROFILE Profile, BAND Band, uint16_t Frequency, uint16_t Baud, uint16_t WakeUpTime = 0x0001, uint8_t DutyCycle = 0x00, uint8_t LowVoltage = 0xE0, uint8_t Interrupt = INTERRUPT_NONE, bool InitSPI = true );
-
+  
+  void Init ( BAND Band, BANDWIDTH Bandwidth, uint16_t Frequency, uint16_t Baud, LNA_GAIN Gain, SIGNAL_THRESHOLD Threshold, SIGNAL_DEVATION Devation, AFC FrequencyControl, VDI DataIndicator, DQF DataQualityFactor, bool HighAccuracyMode, bool LowPowerMode, uint16_t WakeUpTime, uint8_t DutyCycle, uint8_t LowVoltage, INTERRUPT Interrupt, bool InitSPI );
+  void Init ( PROFILE Profile, BAND Band, uint16_t Frequency, uint16_t Baud, uint16_t WakeUpTime = 0x0001, uint8_t DutyCycle = 0x00, uint8_t LowVoltage = 0xE0, INTERRUPT Interrupt = INTERRUPT_NONE, bool InitSPI = true );
+  
+  uint8_t Command ( uint8_t Data );
+  
   bool IsReady ( );
   void Update ( );
   void Reset ( );
-
+  
   DataStruct GetData ( );
   StatusStruct GetStatus ( );
-
+  
   uint16_t GetFrequency ( BAND Band, uint32_t Hertz );
   uint16_t GetBaud ( uint32_t Bitrate );
   uint32_t GetBitrate ( uint16_t Baud );
   uint16_t GetWakeUpTime ( uint32_t Milliseconds );
   uint8_t GetDutyCycle ( uint32_t Milliseconds, uint8_t Percent );
   uint8_t GetLowVoltage ( uint16_t Millivolts );
-
+  
   extern uint8_t Data;
   extern uint16_t Status;
-
+  
   }
 
 #endif

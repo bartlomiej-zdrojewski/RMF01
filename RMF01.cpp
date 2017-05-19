@@ -10,22 +10,85 @@ namespace RMF01 {
 //
 // Initialises the RMF01 device using custom settings.
 //
-void RMF01::Init ( BAND Band, BANDWIDTH Bandwidth, uint16_t Frequency, uint16_t Baud, LNA_GAIN Gain, SIGNAL_THRESHOLD Threshold, SIGNAL_DEVATION Devation, AFC FrequencyControl, VDI DataIndicator, DQF DataQualityFactor, bool HighAccuracyMode, bool LowPowerMode, uint16_t WakeUpTime, uint8_t DutyCycle, uint8_t LowVoltage, uint8_t Interrupt, bool InitSPI ) {
+void RMF01::Init ( BAND Band, BANDWIDTH Bandwidth, uint16_t Frequency, uint16_t Baud, LNA_GAIN Gain, SIGNAL_THRESHOLD Threshold, SIGNAL_DEVATION Devation, AFC FrequencyControl, VDI DataIndicator, DQF DataQualityFactor, bool HighAccuracyMode, bool LowPowerMode, uint16_t WakeUpTime, uint8_t DutyCycle, uint8_t LowVoltage, INTERRUPT Interrupt, bool InitSPI ) {
 
+  for ( uint16_t i = 0; i < 1024; i++ ); // Waiting for RMF01's clock to stabilize
+  
   if ( InitSPI ) {
 
-    // INIT SPI
+    RMF01_SCK_DDR |= ( 1 << RMF01_SCK_PIN );
+    RMF01_SDO_DDR |= ( 1 << RMF01_SDO_PIN );
+    RMF01_SEL_DDR |= ( 1 << RMF01_SEL_PIN );
 
+    RMF01_SDI_DDR &= ~( 1 << RMF01_SDI_PIN );
+    RMF01_INT_DDR &= ~( 1 << RMF01_INT_PIN );
+    
+    SPCR = ( 1 << SPE ) | ( 1 << MSTR ); }
+
+  RMF01_SEL_PORT &= ~( 1 << RMF01_SEL_PIN );
+
+  uint8_t CMDL = 0x80;
+  uint8_t CMDR = 0xF1; // Parameters are 16pF load capacitor, clock output disabled.
+
+  switch ( Band ) {
+    
     }
 
-  // SET EVERYTHING
+  switch ( Bandwidth ) {
+    
+    }
+
+  switch ( Interrupt ) {
+    
+    }
+  
+  Command( CMDL );
+  Command( CMDR );
+  
+  Command( 0xA0 | ( ( Frequency >> 8 ) & 0x0F ) );
+  Command( Frequency >> 8 );
+
+  // Data Rate Command 
+  // Wake-Up Timer Command
+  // Low Duty-Cycle Command 
+  // Low Battery Detector and Microcontroller  Clock Divider Comman -> 10Mhz
+
+  Command( 0xDA );
+  Command( 0x00 );
+
+  Command( 0xCE );
+  Command( 0x80 );
+  Command( 0xCE );
+  Command( 0x83 );
+  
+  // AFC Command 
+  // Data Filter Command
+
+  CMDR = 0x01;
+
+  switch ( DataIndicator ) {
+    
+    }
+  
+  switch ( Gain ) {
+    
+    }
+
+  switch ( Threshold ) {
+    
+    }
+
+  Command( 0xC0 );
+  Command( CMDR );
+  
+  RMF01_SEL_PORT |= ( 1 << RMF01_SEL_PIN );
 
   Update(); }
 
 //
 // Initialises the RMF01 device using profile.
 //
-void RMF01::Init ( PROFILE Profile, BAND Band, uint16_t Frequency, uint16_t Baud, uint16_t WakeUpTime, uint8_t DutyCycle, uint8_t LowVoltage, uint8_t Interrupt, bool InitSPI ) {
+void RMF01::Init ( PROFILE Profile, BAND Band, uint16_t Frequency, uint16_t Baud, uint16_t WakeUpTime, uint8_t DutyCycle, uint8_t LowVoltage, INTERRUPT Interrupt, bool InitSPI ) {
 
   switch ( Profile ) {
 
@@ -35,9 +98,18 @@ void RMF01::Init ( PROFILE Profile, BAND Band, uint16_t Frequency, uint16_t Baud
     case PROFILE_LONG_RANGE : Init( Band, BANDWIDTH_67_KHZ, Frequency, Baud, LNA_GAIN_0_DBM, SIGNAL_THRESHOLD_MINUS_103_DBM, SIGNAL_DEVATION_31_STEPS, AFC_LOW_SIGNAL, VDI_DIGITAL_RSSI_AND_DATA_QUALITY_DETECTOR, DQF_4, true, false, WakeUpTime, DutyCycle, LowVoltage, Interrupt, InitSPI ); break;
     case PROFILE_MULTIPLE_TRANSMITTERS : Init( Band, BANDWIDTH_400_KHZ, Frequency, Baud, LNA_GAIN_MINUS_6_DBM, SIGNAL_THRESHOLD_MINUS_91_DBM, SIGNAL_DEVATION_7_STEPS, AFC_LOW_SIGNAL, VDI_DIGITAL_RSSI_AND_DATA_QUALITY_DETECTOR, DQF_4, false, false, WakeUpTime, DutyCycle, LowVoltage, Interrupt, InitSPI ); break;
 
-    }
+    } }
 
-  }
+//
+// Commands the RMF01 device using SPI protocol.
+//
+uint8_t RMF01::Command ( uint8_t Data ) {
+
+  SPDR = Data;
+  
+  while( !( SPSR & ( 1 << SPIF ) ) );
+  
+  return SPDR; }
 
 //
 // Checks whether the RMF01 device is ready to provide data or an programmed interrupt occurred.
@@ -51,21 +123,29 @@ bool RMF01::IsReady ( ) {
 //
 void RMF01::Update ( ) {
 
+  RMF01_SEL_PORT &= ~( 1 << RMF01_SEL_PIN );
+
   // READ STATUS
   // READ DATA BYTE
   // ???
   // PROFIT
 
-  }
+  // CLEAR FIFO
+  Command( 0xCE );
+  Command( 0x80 );
+  Command( 0xCE );
+  Command( 0x83 );
+  // CLEAR FIFO
+
+  RMF01_SEL_PORT |= ( 1 << RMF01_SEL_PIN ); }
 
 //
 // Resets the RMF01 device without turning it off.
 //
 void RMF01::Reset ( ) {
 
-  // 0xFF00
-
-  }
+  Command( 0xFF );
+  Command( 0x00 ); }
 
 //
 // Interprets the data value and returns it as a structure.
@@ -92,10 +172,10 @@ RMF01::StatusStruct RMF01::GetStatus ( ) {
   Struct.BufferEmpty = ( Status >> 8 ) & 0x08;
   Struct.Interrupt = Struct.WakeUp | Struct.LowVoltage | Struct.BufferOverflow;
 
-  Struct.RSSI = ( Status >> 8 ) & 0x04; // Good Signal Strength
-  Struct.DQD = ( Status >> 8 ) & 0x02; // Good Signal Quality
-  Struct.AFCT = Status & 0x80; // Stabilizing Frequency
-  Struct.AFCS = Status & 0x40; // Frequency Stabilized
+  Struct.StrongSignal = ( Status >> 8 ) & 0x04; // Good Signal Strength
+  Struct.GoodQualitySignal = ( Status >> 8 ) & 0x02; // Good Signal Quality
+  Struct.FrequencyToggling = Status & 0x80; // Stabilizing Frequency
+  Struct.FrequencyStable = Status & 0x40; // Frequency Stabilized
 
   Struct.SignalDevation = Status & 0x3F;
 
