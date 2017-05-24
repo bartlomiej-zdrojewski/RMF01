@@ -43,7 +43,7 @@ void setup ( ) {
   Serial.begin( 9600 );
   
   RMF01::Init( RMF01::PROFILE_LONG_RANGE, RMF01::BAND_433_MHZ, RMF01::GetFrequency( RMF01::BAND_433_MHZ, 433920000 ), RMF01::GetBaud( 4800 ) );
-
+  
   }
 
 void loop ( ) {

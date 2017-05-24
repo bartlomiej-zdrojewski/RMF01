@@ -145,8 +145,8 @@ namespace RMF01 {
 
     };
   
-  void Init ( BAND Band, BANDWIDTH Bandwidth, uint16_t Frequency, uint16_t Baud, LNA_GAIN Gain, SIGNAL_THRESHOLD Threshold, SIGNAL_DEVATION Devation, AFC FrequencyControl, VDI DataIndicator, DQF DataQualityFactor, bool HighAccuracyMode, bool LowPowerMode, uint16_t WakeUpTime, uint8_t DutyCycle, uint8_t LowVoltage, INTERRUPT Interrupt, bool InitSPI );
-  void Init ( PROFILE Profile, BAND Band, uint16_t Frequency, uint16_t Baud, uint16_t WakeUpTime = 0x0001, uint8_t DutyCycle = 0x00, uint8_t LowVoltage = 0xE0, INTERRUPT Interrupt = INTERRUPT_NONE, bool InitSPI = true );
+  void Init ( BAND Band, BANDWIDTH Bandwidth, uint16_t Frequency, uint8_t Baud, LNA_GAIN Gain, SIGNAL_THRESHOLD Threshold, SIGNAL_DEVATION Devation, AFC FrequencyControl, VDI DataIndicator, DQF DataQualityFactor, bool HighAccuracyMode, bool LowPowerMode, uint16_t WakeUpTime, uint8_t DutyCycle, uint8_t LowVoltage, INTERRUPT Interrupt, bool InitSPI );
+  void Init ( PROFILE Profile, BAND Band, uint16_t Frequency, uint8_t Baud, uint16_t WakeUpTime = 0x0001, uint8_t DutyCycle = 0x00, uint8_t LowVoltage = 0xE0, INTERRUPT Interrupt = INTERRUPT_NONE, bool InitSPI = true );
   
   uint8_t Command ( uint8_t Data );
   
@@ -158,8 +158,8 @@ namespace RMF01 {
   StatusStruct GetStatus ( );
   
   uint16_t GetFrequency ( BAND Band, uint32_t Hertz );
-  uint16_t GetBaud ( uint32_t Bitrate );
-  uint32_t GetBitrate ( uint16_t Baud );
+  uint8_t GetBaud ( uint32_t Bitrate );
+  uint32_t GetBitrate ( uint8_t Baud );
   uint16_t GetWakeUpTime ( uint32_t Milliseconds );
   uint8_t GetDutyCycle ( uint32_t Milliseconds, uint8_t Percent );
   uint8_t GetLowVoltage ( uint16_t Millivolts );

@@ -10,7 +10,7 @@ namespace RMF01 {
 //
 // Initialises the RMF01 device using custom settings.
 //
-void RMF01::Init ( BAND Band, BANDWIDTH Bandwidth, uint16_t Frequency, uint16_t Baud, LNA_GAIN Gain, SIGNAL_THRESHOLD Threshold, SIGNAL_DEVATION Devation, AFC FrequencyControl, VDI DataIndicator, DQF DataQualityFactor, bool HighAccuracyMode, bool LowPowerMode, uint16_t WakeUpTime, uint8_t DutyCycle, uint8_t LowVoltage, INTERRUPT Interrupt, bool InitSPI ) {
+void RMF01::Init ( BAND Band, BANDWIDTH Bandwidth, uint16_t Frequency, uint8_t Baud, LNA_GAIN Gain, SIGNAL_THRESHOLD Threshold, SIGNAL_DEVATION Devation, AFC FrequencyControl, VDI DataIndicator, DQF DataQualityFactor, bool HighAccuracyMode, bool LowPowerMode, uint16_t WakeUpTime, uint8_t DutyCycle, uint8_t LowVoltage, INTERRUPT Interrupt, bool InitSPI ) {
 
   for ( uint16_t i = 0; i < 1024; i++ ); // Waiting for RMF01's clock to stabilize
   
@@ -41,6 +41,14 @@ void RMF01::Init ( BAND Band, BANDWIDTH Bandwidth, uint16_t Frequency, uint16_t 
   switch ( Interrupt ) {
     
     }
+
+  if ( LowPowerMode || ( Interrupt & INTERRUPT_WAKE_UP ) ) {
+    
+    }
+
+  if ( Interrupt & INTERRUPT_LOW_VOLTAGE ) {
+    
+    }
   
   Command( CMDL );
   Command( CMDR );
@@ -48,10 +56,31 @@ void RMF01::Init ( BAND Band, BANDWIDTH Bandwidth, uint16_t Frequency, uint16_t 
   Command( 0xA0 | ( ( Frequency >> 8 ) & 0x0F ) );
   Command( Frequency >> 8 );
 
-  // Data Rate Command 
-  // Wake-Up Timer Command
-  // Low Duty-Cycle Command 
-  // Low Battery Detector and Microcontroller  Clock Divider Comman -> 10Mhz
+  Command( 0xC8 );
+  Command( Baud );
+
+  if ( LowPowerMode ) {
+
+    Command( 0xE0 | ( ( Frequency >> 8 ) & 0x1F ) );
+    Command( WakeUpTime );
+
+    Command( 0xCC );
+    Command( DutyCycle ); }
+
+  else if ( Interrupt & INTERRUPT_WAKE_UP ) {
+
+    Command( 0xE0 | ( ( Frequency >> 8 ) & 0x1F ) );
+    Command( WakeUpTime ); }
+
+  if ( Interrupt & INTERRUPT_LOW_VOLTAGE ) {
+
+    Command( 0xC2 );
+    Command( 0xE0 | LowVoltage ); }
+
+  else {
+    
+    Command( 0xC2 );
+    Command( 0xE0 ); }
 
   Command( 0xDA );
   Command( 0x00 );
@@ -60,21 +89,44 @@ void RMF01::Init ( BAND Band, BANDWIDTH Bandwidth, uint16_t Frequency, uint16_t 
   Command( 0x80 );
   Command( 0xCE );
   Command( 0x83 );
-  
-  // AFC Command 
-  // Data Filter Command
 
-  CMDR = 0x01;
+  CMDR = 0x0B;
 
-  switch ( DataIndicator ) {
+  switch ( FrequencyControl ) {
+    
+    }
+
+  switch ( Devation ) {
+    
+    }
+
+  if ( HighAccuracyMode ) {
+    
+    }
+
+  Command( 0xC6 );
+  Command( CMDR );
+
+  CMDR = 0x28;
+
+  switch ( DataQualityFactor ) {
     
     }
   
+  Command( 0xC4 );
+  Command( CMDR );
+
+  CMDR = 0x01;
+
   switch ( Gain ) {
     
     }
 
   switch ( Threshold ) {
+    
+    }
+
+  switch ( DataIndicator ) {
     
     }
 
@@ -88,14 +140,14 @@ void RMF01::Init ( BAND Band, BANDWIDTH Bandwidth, uint16_t Frequency, uint16_t 
 //
 // Initialises the RMF01 device using profile.
 //
-void RMF01::Init ( PROFILE Profile, BAND Band, uint16_t Frequency, uint16_t Baud, uint16_t WakeUpTime, uint8_t DutyCycle, uint8_t LowVoltage, INTERRUPT Interrupt, bool InitSPI ) {
+void RMF01::Init ( PROFILE Profile, BAND Band, uint16_t Frequency, uint8_t Baud, uint16_t WakeUpTime, uint8_t DutyCycle, uint8_t LowVoltage, INTERRUPT Interrupt, bool InitSPI ) {
 
   switch ( Profile ) {
 
     case PROFILE_AVERANGE : Init( Band, BANDWIDTH_200_KHZ, Frequency, Baud, LNA_GAIN_MINUS_6_DBM, SIGNAL_THRESHOLD_MINUS_91_DBM, SIGNAL_DEVATION_31_STEPS, AFC_LOW_SIGNAL, VDI_DIGITAL_RSSI_AND_DATA_QUALITY_DETECTOR, DQF_4, false, false, WakeUpTime, DutyCycle, LowVoltage, Interrupt, InitSPI ); break;
     case PROFILE_LOW_POWER : Init( Band, BANDWIDTH_200_KHZ, Frequency, Baud, LNA_GAIN_MINUS_6_DBM, SIGNAL_THRESHOLD_MINUS_91_DBM, SIGNAL_DEVATION_31_STEPS, AFC_STEADY, VDI_DIGITAL_RSSI, DQF_4, false, true, WakeUpTime, DutyCycle, LowVoltage, Interrupt, InitSPI ); break;
-    case PROFILE_LOW_NOISE : Init( Band, BANDWIDTH_67_KHZ, Frequency, Baud, LNA_GAIN_MINUS_20_DBM, SIGNAL_THRESHOLD_MINUS_73_DBM, SIGNAL_DEVATION_7_STEPS, AFC_POWERUP, VDI_DIGITAL_RSSI_AND_DATA_QUALITY_DETECTOR, DQF_6, true, false, WakeUpTime, DutyCycle, LowVoltage, Interrupt, InitSPI ); break;
-    case PROFILE_LONG_RANGE : Init( Band, BANDWIDTH_67_KHZ, Frequency, Baud, LNA_GAIN_0_DBM, SIGNAL_THRESHOLD_MINUS_103_DBM, SIGNAL_DEVATION_31_STEPS, AFC_LOW_SIGNAL, VDI_DIGITAL_RSSI_AND_DATA_QUALITY_DETECTOR, DQF_4, true, false, WakeUpTime, DutyCycle, LowVoltage, Interrupt, InitSPI ); break;
+    case PROFILE_LOW_NOISE : Init( Band, BANDWIDTH_67_KHZ, Frequency, Baud, LNA_GAIN_0_DBM, SIGNAL_THRESHOLD_MINUS_73_DBM, SIGNAL_DEVATION_7_STEPS, AFC_POWERUP, VDI_DIGITAL_RSSI_AND_DATA_QUALITY_DETECTOR, DQF_6, true, false, WakeUpTime, DutyCycle, LowVoltage, Interrupt, InitSPI ); break;
+    case PROFILE_LONG_RANGE : Init( Band, BANDWIDTH_67_KHZ, Frequency, Baud, LNA_GAIN_MINUS_20_DBM, SIGNAL_THRESHOLD_MINUS_103_DBM, SIGNAL_DEVATION_31_STEPS, AFC_LOW_SIGNAL, VDI_DIGITAL_RSSI_AND_DATA_QUALITY_DETECTOR, DQF_4, true, false, WakeUpTime, DutyCycle, LowVoltage, Interrupt, InitSPI ); break;
     case PROFILE_MULTIPLE_TRANSMITTERS : Init( Band, BANDWIDTH_400_KHZ, Frequency, Baud, LNA_GAIN_MINUS_6_DBM, SIGNAL_THRESHOLD_MINUS_91_DBM, SIGNAL_DEVATION_7_STEPS, AFC_LOW_SIGNAL, VDI_DIGITAL_RSSI_AND_DATA_QUALITY_DETECTOR, DQF_4, false, false, WakeUpTime, DutyCycle, LowVoltage, Interrupt, InitSPI ); break;
 
     } }
@@ -104,7 +156,7 @@ void RMF01::Init ( PROFILE Profile, BAND Band, uint16_t Frequency, uint16_t Baud
 // Commands the RMF01 device using SPI protocol.
 //
 uint8_t RMF01::Command ( uint8_t Data ) {
-
+  
   SPDR = Data;
   
   while( !( SPSR & ( 1 << SPIF ) ) );
@@ -144,8 +196,12 @@ void RMF01::Update ( ) {
 //
 void RMF01::Reset ( ) {
 
+  RMF01_SEL_PORT &= ~( 1 << RMF01_SEL_PIN );
+
   Command( 0xFF );
-  Command( 0x00 ); }
+  Command( 0x00 );
+  
+  RMF01_SEL_PORT |= ( 1 << RMF01_SEL_PIN ); }
 
 //
 // Interprets the data value and returns it as a structure.
@@ -172,10 +228,10 @@ RMF01::StatusStruct RMF01::GetStatus ( ) {
   Struct.BufferEmpty = ( Status >> 8 ) & 0x08;
   Struct.Interrupt = Struct.WakeUp | Struct.LowVoltage | Struct.BufferOverflow;
 
-  Struct.StrongSignal = ( Status >> 8 ) & 0x04; // Good Signal Strength
-  Struct.GoodQualitySignal = ( Status >> 8 ) & 0x02; // Good Signal Quality
-  Struct.FrequencyToggling = Status & 0x80; // Stabilizing Frequency
-  Struct.FrequencyStable = Status & 0x40; // Frequency Stabilized
+  Struct.StrongSignal = ( Status >> 8 ) & 0x04;
+  Struct.GoodQualitySignal = ( Status >> 8 ) & 0x02;
+  Struct.FrequencyToggling = Status & 0x80;
+  Struct.FrequencyStable = Status & 0x40;
 
   Struct.SignalDevation = Status & 0x3F;
 
@@ -250,7 +306,7 @@ uint16_t RMF01::GetFrequency ( BAND Band, uint32_t Hertz ) {
 // Parameter is expected bitrate in bits per second.
 // Bitrate range from 336 bps to 344 827 bps.
 //
-uint16_t RMF01::GetBaud ( uint32_t Bitrate ) {
+uint8_t RMF01::GetBaud ( uint32_t Bitrate ) {
 
   if ( Bitrate < 336 ) {
 
@@ -260,8 +316,8 @@ uint16_t RMF01::GetBaud ( uint32_t Bitrate ) {
 
     return 0x00; }
 
-  uint16_t FirstBaud = 0x00;
-  uint16_t SecondBaud = 0x80;
+  uint8_t FirstBaud = 0x00;
+  uint8_t SecondBaud = 0x80;
 
   while ( GetBitrate( FirstBaud ) > Bitrate && FirstBaud < 0x7F ) FirstBaud++;
   while ( GetBitrate( SecondBaud ) > Bitrate ) SecondBaud++;
@@ -275,7 +331,7 @@ uint16_t RMF01::GetBaud ( uint32_t Bitrate ) {
 // 
 // Calucates bitrate value from the given baud.
 //
-uint32_t RMF01::GetBitrate ( uint16_t Baud ) {
+uint32_t RMF01::GetBitrate ( uint8_t Baud ) {
 
   return ( 10000000L / 29 / ( ( Baud & 0x7F ) + 1 ) / ( 1 + ( ( Baud & 0x80 ) >> 7 ) * 7 ) ); }
 
@@ -285,7 +341,7 @@ uint32_t RMF01::GetBitrate ( uint16_t Baud ) {
 // Time range from 1 ms to 4 294 967 295 ms.
 //
 uint16_t RMF01::GetWakeUpTime ( uint32_t Milliseconds ) {
-
+  
   uint8_t M, R;
   uint32_t D = 0xFFFFFFFF;
 
@@ -297,7 +353,7 @@ uint16_t RMF01::GetWakeUpTime ( uint32_t Milliseconds ) {
 
     uint32_t _M = Milliseconds / pow( 2, _R );
 
-    if ( _M > 255 ) {
+    if ( _M > 0xFF ) {
 
       continue; }
 
@@ -313,6 +369,10 @@ uint16_t RMF01::GetWakeUpTime ( uint32_t Milliseconds ) {
 
       break; } }
 
+  if ( ( R << 8 | M ) == 0x1F00 ) {
+    
+    M++; }
+  
   return ( R << 8 | M ); }
 
 // 
