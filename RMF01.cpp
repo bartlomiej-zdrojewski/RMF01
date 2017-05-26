@@ -10,7 +10,7 @@ namespace RMF01 {
 //
 // Initialises the RMF01 device using custom settings.
 //
-void RMF01::Init ( BAND Band, BANDWIDTH Bandwidth, uint16_t Frequency, uint8_t Baud, LNA_GAIN Gain, SIGNAL_THRESHOLD Threshold, SIGNAL_DEVATION Devation, AFC FrequencyControl, VDI DataIndicator, DQF DataQualityFactor, bool HighAccuracyMode, bool LowPowerMode, uint16_t WakeUpTime, uint8_t DutyCycle, uint8_t LowVoltage, INTERRUPT Interrupt, bool InitSPI ) {
+void RMF01::Init ( BAND Band, BANDWIDTH Bandwidth, uint16_t Frequency, uint8_t Baud, LNA_GAIN Gain, SIGNAL_THRESHOLD Threshold, SIGNAL_DEVATION Devation, AFC FrequencyControl, VDI DataIndicator, DQF DataQualityFactor, bool HighAccuracyMode, bool LowPowerMode, uint16_t WakeUpTime, uint8_t DutyCycle, uint8_t LowVoltage, uint8_t Interrupt, bool InitSPI ) {
 
   for ( uint16_t i = 0; i < 1024; i++ ); // Waiting for RMF01's clock to stabilize
   
@@ -27,28 +27,32 @@ void RMF01::Init ( BAND Band, BANDWIDTH Bandwidth, uint16_t Frequency, uint8_t B
 
   RMF01_SEL_PORT &= ~( 1 << RMF01_SEL_PIN );
 
-  uint8_t CMDL = 0x80;
+  uint8_t CMDL = 0x80; // Parameter is crystal inactive during sleep mode.
   uint8_t CMDR = 0xF1; // Parameters are 16pF load capacitor, clock output disabled.
 
   switch ( Band ) {
-    
-    }
+
+    case BAND_315_MHZ: CMDL = CMDL | 0x00; break;
+    case BAND_433_MHZ: CMDL = CMDL | 0x08; break;
+    case BAND_868_MHZ: CMDL = CMDL | 0x10; break;
+    case BAND_915_MHZ: CMDL = CMDL | 0x18; break; }
 
   switch ( Bandwidth ) {
-    
-    }
 
-  switch ( Interrupt ) {
-    
-    }
+    case BANDWIDTH_67_KHZ:  CMDR = CMDR | 0x0C; break;
+    case BANDWIDTH_134_KHZ: CMDR = CMDR | 0x0A; break;
+    case BANDWIDTH_200_KHZ: CMDR = CMDR | 0x08; break;
+    case BANDWIDTH_270_KHZ: CMDR = CMDR | 0x06; break;
+    case BANDWIDTH_340_KHZ: CMDR = CMDR | 0x04; break;
+    case BANDWIDTH_400_KHZ: CMDR = CMDR | 0x02; break; }
 
   if ( LowPowerMode || ( Interrupt & INTERRUPT_WAKE_UP ) ) {
-    
-    }
+
+    CMDR = CMDL | 0x02; }
 
   if ( Interrupt & INTERRUPT_LOW_VOLTAGE ) {
-    
-    }
+
+    CMDR = CMDL | 0x04; }
   
   Command( CMDL );
   Command( CMDR );
@@ -93,16 +97,21 @@ void RMF01::Init ( BAND Band, BANDWIDTH Bandwidth, uint16_t Frequency, uint8_t B
   CMDR = 0x0B;
 
   switch ( FrequencyControl ) {
-    
-    }
+
+    case AFC_POWERUP:    CMDR = CMDR | 0x40; break;
+    case AFC_LOW_SIGNAL: CMDR = CMDR | 0x80; break;
+    case AFC_STEADY:     CMDR = CMDR | 0xC0; break; }
 
   switch ( Devation ) {
-    
-    }
+
+    case SIGNAL_DEVATION_7_STEPS:   CMDR = CMDR | 0x30; break;
+    case SIGNAL_DEVATION_15_STEPS:  CMDR = CMDR | 0x20; break;
+    case SIGNAL_DEVATION_31_STEPS:  CMDR = CMDR | 0x10; break;
+    case SIGNAL_DEVATION_UNLIMITED: CMDR = CMDR | 0x00; break; }
 
   if ( HighAccuracyMode ) {
     
-    }
+    CMDR = CMDR | 0x04; }
 
   Command( 0xC6 );
   Command( CMDR );
@@ -110,8 +119,15 @@ void RMF01::Init ( BAND Band, BANDWIDTH Bandwidth, uint16_t Frequency, uint8_t B
   CMDR = 0x28;
 
   switch ( DataQualityFactor ) {
-    
-    }
+
+    case DQF_0: CMDR = CMDR | 0x00; break;
+    case DQF_1: CMDR = CMDR | 0x01; break;
+    case DQF_2: CMDR = CMDR | 0x02; break;
+    case DQF_3: CMDR = CMDR | 0x03; break;
+    case DQF_4: CMDR = CMDR | 0x04; break;
+    case DQF_5: CMDR = CMDR | 0x05; break;
+    case DQF_6: CMDR = CMDR | 0x06; break;
+    case DQF_7: CMDR = CMDR | 0x07; break; }
   
   Command( 0xC4 );
   Command( CMDR );
@@ -119,16 +135,26 @@ void RMF01::Init ( BAND Band, BANDWIDTH Bandwidth, uint16_t Frequency, uint8_t B
   CMDR = 0x01;
 
   switch ( Gain ) {
-    
-    }
+
+    case LNA_GAIN_0_DBM:        CMDR = CMDR | 0x00; break;
+    case LNA_GAIN_MINUS_6_DBM:  CMDR = CMDR | 0x10; break;
+    case LNA_GAIN_MINUS_14_DBM: CMDR = CMDR | 0x20; break;
+    case LNA_GAIN_MINUS_20_DBM: CMDR = CMDR | 0x30; break; }
 
   switch ( Threshold ) {
-    
-    }
+
+    case SIGNAL_THRESHOLD_MINUS_73_DBM:  CMDR = CMDR | 0x0A; break;
+    case SIGNAL_THRESHOLD_MINUS_79_DBM:  CMDR = CMDR | 0x08; break;
+    case SIGNAL_THRESHOLD_MINUS_85_DBM:  CMDR = CMDR | 0x06; break;
+    case SIGNAL_THRESHOLD_MINUS_91_DBM:  CMDR = CMDR | 0x04; break;
+    case SIGNAL_THRESHOLD_MINUS_97_DBM:  CMDR = CMDR | 0x02; break;
+    case SIGNAL_THRESHOLD_MINUS_103_DBM: CMDR = CMDR | 0x00; break; }
 
   switch ( DataIndicator ) {
-    
-    }
+
+    case VDI_DIGITAL_RSSI:                           CMDR = CMDR | 0x00; break;
+    case VDI_DATA_QUALITY_DETECTOR:                  CMDR = CMDR | 0x40; break;
+    case VDI_DIGITAL_RSSI_AND_DATA_QUALITY_DETECTOR: CMDR = CMDR | 0xC0; break; }
 
   Command( 0xC0 );
   Command( CMDR );
@@ -140,15 +166,15 @@ void RMF01::Init ( BAND Band, BANDWIDTH Bandwidth, uint16_t Frequency, uint8_t B
 //
 // Initialises the RMF01 device using profile.
 //
-void RMF01::Init ( PROFILE Profile, BAND Band, uint16_t Frequency, uint8_t Baud, uint16_t WakeUpTime, uint8_t DutyCycle, uint8_t LowVoltage, INTERRUPT Interrupt, bool InitSPI ) {
+void RMF01::Init ( PROFILE Profile, BAND Band, uint16_t Frequency, uint8_t Baud, uint16_t WakeUpTime, uint8_t DutyCycle, uint8_t LowVoltage, uint8_t Interrupt, bool InitSPI ) {
 
   switch ( Profile ) {
 
-    case PROFILE_AVERANGE : Init( Band, BANDWIDTH_200_KHZ, Frequency, Baud, LNA_GAIN_MINUS_6_DBM, SIGNAL_THRESHOLD_MINUS_91_DBM, SIGNAL_DEVATION_31_STEPS, AFC_LOW_SIGNAL, VDI_DIGITAL_RSSI_AND_DATA_QUALITY_DETECTOR, DQF_4, false, false, WakeUpTime, DutyCycle, LowVoltage, Interrupt, InitSPI ); break;
-    case PROFILE_LOW_POWER : Init( Band, BANDWIDTH_200_KHZ, Frequency, Baud, LNA_GAIN_MINUS_6_DBM, SIGNAL_THRESHOLD_MINUS_91_DBM, SIGNAL_DEVATION_31_STEPS, AFC_STEADY, VDI_DIGITAL_RSSI, DQF_4, false, true, WakeUpTime, DutyCycle, LowVoltage, Interrupt, InitSPI ); break;
+    case PROFILE_AVERANGE : Init( Band, BANDWIDTH_200_KHZ, Frequency, Baud, LNA_GAIN_MINUS_6_DBM, SIGNAL_THRESHOLD_MINUS_91_DBM, SIGNAL_DEVATION_15_STEPS, AFC_LOW_SIGNAL, VDI_DIGITAL_RSSI_AND_DATA_QUALITY_DETECTOR, DQF_4, false, false, WakeUpTime, DutyCycle, LowVoltage, Interrupt, InitSPI ); break;
+    case PROFILE_LOW_POWER : Init( Band, BANDWIDTH_200_KHZ, Frequency, Baud, LNA_GAIN_MINUS_6_DBM, SIGNAL_THRESHOLD_MINUS_91_DBM, SIGNAL_DEVATION_7_STEPS, AFC_STEADY, VDI_DIGITAL_RSSI, DQF_4, false, true, WakeUpTime, DutyCycle, LowVoltage, Interrupt, InitSPI ); break;
     case PROFILE_LOW_NOISE : Init( Band, BANDWIDTH_67_KHZ, Frequency, Baud, LNA_GAIN_0_DBM, SIGNAL_THRESHOLD_MINUS_73_DBM, SIGNAL_DEVATION_7_STEPS, AFC_POWERUP, VDI_DIGITAL_RSSI_AND_DATA_QUALITY_DETECTOR, DQF_6, true, false, WakeUpTime, DutyCycle, LowVoltage, Interrupt, InitSPI ); break;
     case PROFILE_LONG_RANGE : Init( Band, BANDWIDTH_67_KHZ, Frequency, Baud, LNA_GAIN_MINUS_20_DBM, SIGNAL_THRESHOLD_MINUS_103_DBM, SIGNAL_DEVATION_31_STEPS, AFC_LOW_SIGNAL, VDI_DIGITAL_RSSI_AND_DATA_QUALITY_DETECTOR, DQF_4, true, false, WakeUpTime, DutyCycle, LowVoltage, Interrupt, InitSPI ); break;
-    case PROFILE_MULTIPLE_TRANSMITTERS : Init( Band, BANDWIDTH_400_KHZ, Frequency, Baud, LNA_GAIN_MINUS_6_DBM, SIGNAL_THRESHOLD_MINUS_91_DBM, SIGNAL_DEVATION_7_STEPS, AFC_LOW_SIGNAL, VDI_DIGITAL_RSSI_AND_DATA_QUALITY_DETECTOR, DQF_4, false, false, WakeUpTime, DutyCycle, LowVoltage, Interrupt, InitSPI ); break;
+    case PROFILE_MULTIPLE_TRANSMITTERS : Init( Band, BANDWIDTH_400_KHZ, Frequency, Baud, LNA_GAIN_MINUS_6_DBM, SIGNAL_THRESHOLD_MINUS_91_DBM, SIGNAL_DEVATION_31_STEPS, AFC_LOW_SIGNAL, VDI_DIGITAL_RSSI_AND_DATA_QUALITY_DETECTOR, DQF_4, false, false, WakeUpTime, DutyCycle, LowVoltage, Interrupt, InitSPI ); break;
 
     } }
 
@@ -395,7 +421,7 @@ uint8_t RMF01::GetDutyCycle ( uint32_t Milliseconds, uint8_t Percent ) {
 
     D = 0x7F; }
 
-  return ( ( D << 1 ) & 0x01 ); }
+  return ( ( D << 1 ) | 0x01 ); }
 
 // 
 // Calculates proper low voltage value for the init function.

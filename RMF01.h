@@ -5,6 +5,26 @@
 #include <stdint.h>
 #include <math.h>
 
+/*
+#define RMF01_SCK_DDR   DDRB
+#define RMF01_SDI_DDR   DDRB
+#define RMF01_SDO_DDR   DDRB
+#define RMF01_SEL_DDR   DDRB
+#define RMF01_INT_DDR   DDRB
+
+#define RMF01_SCK_PORT  PORTB
+#define RMF01_SDI_PORT  PORTB
+#define RMF01_SDO_PORT  PORTB
+#define RMF01_SEL_PORT  PORTB
+#define RMF01_INT_PORT  PORTB
+
+#define RMF01_SCK_PIN   0
+#define RMF01_SDI_PIN   0
+#define RMF01_SDO_PIN   0
+#define RMF01_SEL_PIN   0
+#define RMF01_INT_PIN   0
+*/
+
 #define RMF01_SCK_DDR   DDRB
 #define RMF01_SDI_DDR   DDRB
 #define RMF01_SDO_DDR   DDRB
@@ -113,11 +133,11 @@ namespace RMF01 {
 
   enum PROFILE {
 
-    PROFILE_AVERANGE,               // Parameters are medium bandwidth, medium gain, medium signal threshold, high signal devation, frequency control on low signal, digital rssi and data quality detector as data indicators, high accuracy mode.
-    PROFILE_LOW_POWER,              // Parameters are medium bandwidth, medium gain, medium signal threshold, high signal devation, steady frequency control, digital rssi as data indicator, low accuracy mode, low power mode.
+    PROFILE_AVERANGE,               // Parameters are medium bandwidth, medium gain, medium signal threshold, medium signal devation, frequency control on low signal, digital rssi and data quality detector as data indicators, high accuracy mode.
+    PROFILE_LOW_POWER,              // Parameters are medium bandwidth, medium gain, medium signal threshold, low signal devation, steady frequency control, digital rssi as data indicator, low accuracy mode, low power mode.
     PROFILE_LOW_NOISE,              // Parameters are narrow bandwidth, low gain, high signal threshold, low signal devation, frequency control on power up, digital rssi and data quality detector as data indicators, and high accuracy mode.
     PROFILE_LONG_RANGE,             // Parameters are narrow bandwidth, high gain, low signal threshold, high signal devation, frequency control on low signal, digital rssi and data quality detector as data indicators, high accuracy mode. Baud (bitrate) value should be as low as possible.
-    PROFILE_MULTIPLE_TRANSMITTERS   // Parameters are wide bandwidth, medium gain, medium threshold, low signal devation, frequency control on low signal, digital rssi and data quality detector as data indicators, low accuracy mode.
+    PROFILE_MULTIPLE_TRANSMITTERS   // Parameters are wide bandwidth, medium gain, medium threshold, high signal devation, frequency control on low signal, digital rssi and data quality detector as data indicators, low accuracy mode.
 
     };
 
@@ -145,8 +165,8 @@ namespace RMF01 {
 
     };
   
-  void Init ( BAND Band, BANDWIDTH Bandwidth, uint16_t Frequency, uint8_t Baud, LNA_GAIN Gain, SIGNAL_THRESHOLD Threshold, SIGNAL_DEVATION Devation, AFC FrequencyControl, VDI DataIndicator, DQF DataQualityFactor, bool HighAccuracyMode, bool LowPowerMode, uint16_t WakeUpTime, uint8_t DutyCycle, uint8_t LowVoltage, INTERRUPT Interrupt, bool InitSPI );
-  void Init ( PROFILE Profile, BAND Band, uint16_t Frequency, uint8_t Baud, uint16_t WakeUpTime = 0x0001, uint8_t DutyCycle = 0x00, uint8_t LowVoltage = 0xE0, INTERRUPT Interrupt = INTERRUPT_NONE, bool InitSPI = true );
+  void Init ( BAND Band, BANDWIDTH Bandwidth, uint16_t Frequency, uint8_t Baud, LNA_GAIN Gain, SIGNAL_THRESHOLD Threshold, SIGNAL_DEVATION Devation, AFC FrequencyControl, VDI DataIndicator, DQF DataQualityFactor, bool HighAccuracyMode, bool LowPowerMode, uint16_t WakeUpTime, uint8_t DutyCycle, uint8_t LowVoltage, uint8_t Interrupt, bool InitSPI );
+  void Init ( PROFILE Profile, BAND Band, uint16_t Frequency, uint8_t Baud, uint16_t WakeUpTime = 0x0001, uint8_t DutyCycle = 0x00, uint8_t LowVoltage = 0xE0, uint8_t Interrupt = INTERRUPT_NONE, bool InitSPI = true );
   
   uint8_t Command ( uint8_t Data );
   
